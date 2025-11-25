@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Simulator - Learn Without Risk</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .portfolio-card {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 768px) {
+            .portfolio-card {
+                grid-column: span 1;
+            }
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box label {
+            display: block;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-box .value.positive {
+            color: #27ae60;
+        }
+
+        .stat-box .value.negative {
+            color: #e74c3c;
+        }
+
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .portfolio-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .portfolio-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 0.9em;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-symbol {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stock-name {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stock-price {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 0 15px;
+        }
+
+        .stock-price.up {
+            color: #27ae60;
+        }
+
+        .stock-price.down {
+            color: #e74c3c;
+        }
+
+        .price-change {
+            font-size: 0.9em;
+            margin-right: 15px;
+        }
+
+        .price-change.up {
+            color: #27ae60;
+        }
+
+        .price-change.down {
+            color: #e74c3c;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 80px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            border: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+
+        .empty-state p {
+            margin-bottom: 15px;
+        }
+
+        .info-section {
+            background: #f0f7ff;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .info-section p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #chartContainer {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .stock-link {
+            cursor: pointer;
+            color: #667eea;
+            text-decoration: underline;
+        }
+
+        .stock-link:hover {
+            color: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Stock Simulator</h1>
+            <p>Learn to invest without risk!</p>
+        </header>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="main-grid">
+
+            <!-- Education Section -->
+            <div class="card">
+                <h2>📚 Learn</h2>
+                <div class="info-section">
+                    <h3>What is a Stock?</h3>
+                    <p>A stock represents a small piece of ownership in a company. When you buy a stock, you become a part-owner of that company.</p>
+                </div>
+                <div class="info-section">
+                    <h3>How to Start</h3>
+                    <p>1. Browse the market to see available stocks<br>
+                    2. Click on a stock to buy shares<br>
+                    3. Watch your portfolio grow (or shrink)!<br>
+                    4. Sell stocks when you think prices are high</p>
+                </div>
+            </div>
+
+            <!-- Trading Tips -->
+            <div class="card">
+                <h2>🎯 Trading Tips</h2>
+                <div class="info-section">
+                    <h3>Buy Low, Sell High</h3>
+                    <p>Try to buy stocks when their prices are low and sell them when they're high to make a profit.</p>
+                </div>
+                <div class="info-section">
+                    <h3>Diversify</h3>
+                    <p>Don't put all your money in one stock. Spreading investments reduces risk.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Continue Button Section -->
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
+            <button class="btn-primary" id="continueBtn" onclick="unlockTrading()" style="padding: 15px 40px; font-size: 1.2em;">
+                Continue to Trading
+            </button>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Game State
+        let gameState = {
+            tradingUnlocked: false,
+            cash: 10000,
+            holdings: {},
+            stocks: {},
+            priceHistory: {} // Track price history for charts
+        };
+
+        // Sample stocks with realistic data
+        const sampleStocks = [
+            { symbol: 'LITS', name: 'Lit Stocks', basePrice: 50, sector: 'Lights' },
+            { symbol: 'KC', name: 'Kids Corp.', basePrice: 75, sector: 'Fun' },
+            { symbol: 'KBOM', name: 'Kaboom Bombs', basePrice: 45, sector: 'Mining' },
+            { symbol: 'PST', name: 'Primary Stocks Painting', basePrice: 60, sector: 'Art' },
+            { symbol: 'LIM', name: 'Lime Limes', basePrice: 40, sector: 'Fruit' },
+            { symbol: 'DOG', name: 'Dog Pet Store', basePrice: 55, sector: 'Pet Store' },
+            { symbol: 'PIP', name: 'Pepe Private Schools', basePrice: 85, sector: 'Education' },
+            { symbol: 'SUIN', name: 'Sun Infinite Sunglasses', basePrice: 65, sector: 'Fashion' },
+            { symbol: 'PP', name: 'Pepe Pig Funny Cartoons', basePrice: 70, sector: 'Entertainment' },
+            { symbol: 'ERCHB', name: 'Erchin Baby Calendars', basePrice: 35, sector: 'Calendars' }
+        ];
+
+        function loadGameState() {
+            const saved = localStorage.getItem('stockSimulatorState');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Merge keys safely
+                    gameState.tradingUnlocked = !!parsed.tradingUnlocked;
+                    gameState.cash = typeof parsed.cash === 'number' ? parsed.cash : gameState.cash;
+                    gameState.holdings = parsed.holdings || {};
+                    gameState.stocks = parsed.stocks || {};
+                    gameState.priceHistory = parsed.priceHistory || {};
+                } catch (e) {
+                    console.warn('loadGameState: failed to parse saved state, clearing', e);
+                    localStorage.removeItem('stockSimulatorState');
+                }
+            }
+        }
+
+        function initializeGame() {
+            loadGameState();
+
+            sampleStocks.forEach(stock => {
+                if (!gameState.stocks[stock.symbol]) {
+                    gameState.stocks[stock.symbol] = {
+                        name: stock.name,
+                        price: stock.basePrice,
+                        basePrice: stock.basePrice,
+                        change: 0,
+                        sector: stock.sector
+                    };
+                }
+                // Initialize price history
+                if (!gameState.priceHistory[stock.symbol]) {
+                    gameState.priceHistory[stock.symbol] = [stock.basePrice];
+                }
+            });
+
+            // Always show the learning/info section first. Do NOT auto-open trading interface on load.
+            // If user already unlocked trading in another session, we still start on the info page
+            // and require them to press Continue to enter trading mode.
+            const mainGrid = document.querySelector('.main-grid');
+            if (mainGrid) {
+                mainGrid.style.display = '';
+                // Smooth scroll to the learning section on load
+                setTimeout(() => {
+                    try { mainGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e){ /* ignore */ }
+                }, 80);
+            }
+        }
+
+        function unlockTrading() {
+            const btn = document.getElementById('continueBtn');
+            btn.disabled = true;
+            btn.textContent = 'Unlocking...';
+            btn.style.opacity = '0.6';
+
+            // Simulate loading
+            setTimeout(() => {
+                gameState.tradingUnlocked = true;
+                saveGameState();
+                showTradingInterface();
+            }, 1500);
+        }
+
+        function showTradingInterface() {
+            // Hide the learning content
+            const mainGrid = document.querySelector('.main-grid');
+            const continueBtn = document.getElementById('continueBtn').parentElement;
+            
+            mainGrid.style.display = 'none';
+            continueBtn.style.display = 'none';
+
+            // Create trading interface
+            const container = document.querySelector('.container');
+            
+            let tradingHTML = `
+                <div class="trading-interface">
+                    <div class="card portfolio-card">
+                        <h2>Your Portfolio</h2>
+                        <div class="stats">
+                            <div class="stat-box">
+                                <label>Cash Available</label>
+                                <div class="value" id="cashDisplay">$10,000.00</div>
+                            </div>
+                            <div class="stat-box">
+                                <label>Portfolio Value</label>
+                                <div class="value" id="portfolioValue">$0.00</div>
+                            </div>
+                            <div class="stat-box">
+                                <label>Total Assets</label>
+                                <div class="value" id="totalAssets">$10,000.00</div>
+                            </div>
+                        </div>
+                        <div class="stats">
+                            <div class="stat-box">
+                                <label>Total Gain/Loss</label>
+                                <div class="value" id="totalGainLoss">$0.00</div>
+                            </div>
+                            <div class="stat-box">
+                                <label>Return %</label>
+                                <div class="value" id="returnPercent">0.00%</div>
+                            </div>
+                            <div class="stat-box">
+                                <label>Holdings</label>
+                                <div class="value" id="holdingsCount">0</div>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-top: 20px; color: #333;">Your Stocks</h3>
+                        <div id="holdingsContainer">
+                            <div class="empty-state">
+                                <p>You don't own any stocks yet. Start buying!</p>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons" style="margin-top: 20px;">
+                            <button class="btn-primary" onclick="openMarketModal()">Browse Market</button>
+                            <button class="btn-primary" onclick="resetPortfolio()">Reset Portfolio</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Market</h2>
+                        <div class="info-section">
+                            <h3>💡 Quick Tips</h3>
+                            <p>Click "Buy Stock" to add stocks to your portfolio. Watch prices fluctuate and track your gains!</p>
+                        </div>
+                        <div id="marketContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Buy Stock Modal -->
+                <div id="buyModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Buy Stock</h2>
+                            <button class="close" onclick="closeBuyModal()">&times;</button>
+                        </div>
+                        <div id="buyModalBody"></div>
+                    </div>
+                </div>
+
+                <!-- Sell Stock Modal -->
+                <div id="sellModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Sell Stock</h2>
+                            <button class="close" onclick="closeSellModal()">&times;</button>
+                        </div>
+                        <div id="sellModalBody"></div>
+                    </div>
+                </div>
+
+                <!-- Market Modal -->
+                <div id="marketModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Browse Market</h2>
+                            <button class="close" onclick="closeMarketModal()">&times;</button>
+                        </div>
+                        <div id="marketModalBody"></div>
+                    </div>
+                </div>
+
+                <!-- Stock Graph Modal -->
+                <div id="graphModal" class="modal">
+                    <div class="modal-content" style="max-width: 700px;">
+                        <div class="modal-header">
+                            <h2 id="graphTitle">Stock Chart</h2>
+                            <button class="close" onclick="closeGraphModal()">&times;</button>
+                        </div>
+                        <div id="chartContainer">
+                            <canvas id="stockChart"></canvas>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-success" id="buyFromGraphBtn" onclick="">Buy Stock</button>
+                            <button class="btn-primary" onclick="closeGraphModal()">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert after the alert
+            const alert = document.getElementById('alert');
+            alert.insertAdjacentHTML('afterend', tradingHTML);
+
+            // Debug: log available stocks and check market container
+            console.log('showTradingInterface: stocks keys =', Object.keys(gameState.stocks));
+            const testMarket = document.getElementById('marketContainer');
+            if (!testMarket) {
+                console.warn('marketContainer not found; creating fallback');
+                const marketDiv = document.createElement('div');
+                marketDiv.id = 'marketContainer';
+                // append to container
+                container.appendChild(marketDiv);
+            }
+
+            // Start the trading interface
+            updateUI();
+            setInterval(updatePrices, 3000);
+        }
+
+        function updatePrices() {
+            // Prices only update when people actually buy/sell
+            // No automatic price changes
+        }
+
+        function updateUI() {
+            if (!gameState.tradingUnlocked) return;
+            updatePortfolioStats();
+            updateHoldings();
+            updateMarket();
+        }
+
+        function updatePortfolioStats() {
+            let portfolioValue = 0;
+            Object.keys(gameState.holdings).forEach(symbol => {
+                const holding = gameState.holdings[symbol];
+                const currentPrice = gameState.stocks[symbol].price;
+                portfolioValue += holding.shares * currentPrice;
+            });
+
+            const totalAssets = gameState.cash + portfolioValue;
+            const gainLoss = totalAssets - 10000;
+            const returnPercent = (gainLoss / 10000) * 100;
+
+            const cashDisplay = document.getElementById('cashDisplay');
+            if (cashDisplay) {
+                cashDisplay.textContent = '$' + gameState.cash.toFixed(2);
+            }
+            
+            const portfolioValue_el = document.getElementById('portfolioValue');
+            if (portfolioValue_el) {
+                portfolioValue_el.textContent = '$' + portfolioValue.toFixed(2);
+            }
+
+            const totalAssets_el = document.getElementById('totalAssets');
+            if (totalAssets_el) {
+                totalAssets_el.textContent = '$' + totalAssets.toFixed(2);
+            }
+            
+            const gainLossElement = document.getElementById('totalGainLoss');
+            if (gainLossElement) {
+                gainLossElement.textContent = (gainLoss >= 0 ? '+' : '') + '$' + gainLoss.toFixed(2);
+                gainLossElement.className = 'value ' + (gainLoss >= 0 ? 'positive' : 'negative');
+            }
+
+            const returnElement = document.getElementById('returnPercent');
+            if (returnElement) {
+                returnElement.textContent = (returnPercent >= 0 ? '+' : '') + returnPercent.toFixed(2) + '%';
+                returnElement.className = 'value ' + (returnPercent >= 0 ? 'positive' : 'negative');
+            }
+
+            const holdingsCount = document.getElementById('holdingsCount');
+            if (holdingsCount) {
+                holdingsCount.textContent = Object.keys(gameState.holdings).length;
+            }
+        }
+
+        function updateHoldings() {
+            const container = document.getElementById('holdingsContainer');
+            if (!container) return;
+            
+            const holdings = gameState.holdings;
+
+            if (Object.keys(holdings).length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>You don\'t own any stocks yet. Start buying!</p></div>';
+                return;
+            }
+
+            let html = '<table class="portfolio-table"><tr><th>Stock</th><th>Shares</th><th>Current Price</th><th>Value</th><th>Gain/Loss</th><th>Action</th></tr>';
+            
+            Object.keys(holdings).forEach(symbol => {
+                const holding = gameState.holdings[symbol];
+                const stock = gameState.stocks[symbol];
+                const currentValue = holding.shares * stock.price;
+                const investedValue = holding.shares * holding.avgCost;
+                const gainLoss = currentValue - investedValue;
+                const gainLossPercent = (gainLoss / investedValue) * 100;
+
+                html += `
+                    <tr>
+                        <td><strong>${symbol}</strong><br><span style="color: #666; font-size: 0.9em;">${stock.name}</span></td>
+                        <td>${holding.shares}</td>
+                        <td>$${stock.price.toFixed(2)}</td>
+                        <td>$${currentValue.toFixed(2)}</td>
+                        <td class="${gainLoss >= 0 ? 'positive' : 'negative'}" style="color: ${gainLoss >= 0 ? '#27ae60' : '#e74c3c'}">
+                            ${gainLoss >= 0 ? '+' : ''}$${gainLoss.toFixed(2)} (${gainLossPercent >= 0 ? '+' : ''}${gainLossPercent.toFixed(1)}%)
+                        </td>
+                        <td><button class="btn-danger btn-small" onclick="openSellModal('${symbol}')">Sell</button></td>
+                    </tr>
+                `;
+            });
+
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function updateMarket() {
+            const container = document.getElementById('marketContainer');
+            if (!container) return;
+
+            // Always render from sampleStocks so user-added stocks are shown in order
+            let html = '';
+
+            sampleStocks.forEach(s => {
+                const symbol = s.symbol;
+                const stock = gameState.stocks[symbol] || s;
+                const changePercent = (stock.change || 0).toFixed ? (stock.change || 0).toFixed(2) : '0.00';
+                const changeClass = (stock.change || 0) >= 0 ? 'up' : 'down';
+                const changeSymbol = (stock.change || 0) >= 0 ? '↑' : '↓';
+
+                html += `
+                    <div class="stock-item">
+                        <div class="stock-info">
+                            <div class="stock-symbol stock-link" onclick="openGraphModal('${symbol}')">${symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-price ${changeClass}" onclick="openGraphModal('${symbol}')" style="cursor: pointer;">$${(stock.price || stock.basePrice).toFixed(2)}</div>
+                        <div class="price-change ${changeClass}">${changeSymbol} ${Math.abs(changePercent)}%</div>
+                        <button class="btn-success btn-small" onclick="openBuyModal('${symbol}')">Buy</button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function openBuyModal(symbol) {
+            const stock = gameState.stocks[symbol];
+            const modal = document.getElementById('buyModal');
+            const body = document.getElementById('buyModalBody');
+
+            body.innerHTML = `
+                <div class="form-group">
+                    <label><strong>${symbol}</strong> - ${stock.name}</label>
+                    <label>Current Price: $${stock.price.toFixed(2)}</label>
+                </div>
+                <div class="form-group">
+                    <label for="buyQuantity">Quantity:</label>
+                    <input type="number" id="buyQuantity" min="1" value="1" max="${Math.floor(gameState.cash / stock.price)}">
+                </div>
+                <div class="form-group">
+                    <label>Total Cost: $<span id="totalCostDisplay">0.00</span></label>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-success" onclick="buyStock('${symbol}')">Buy Now</button>
+                    <button class="btn-primary" onclick="closeBuyModal()">Cancel</button>
+                </div>
+            `;
+
+            document.getElementById('buyQuantity').addEventListener('input', () => {
+                const quantity = parseInt(document.getElementById('buyQuantity').value);
+                document.getElementById('totalCostDisplay').textContent = (quantity * stock.price).toFixed(2);
+            });
+
+            document.getElementById('totalCostDisplay').textContent = stock.price.toFixed(2);
+            modal.style.display = 'block';
+        }
+
+        function closeBuyModal() {
+            document.getElementById('buyModal').style.display = 'none';
+        }
+
+        function buyStock(symbol) {
+            const stock = gameState.stocks[symbol];
+            const quantity = parseInt(document.getElementById('buyQuantity').value);
+            const totalCost = quantity * stock.price;
+
+            if (quantity <= 0) {
+                showAlert('Please enter a valid quantity', 'error');
+                return;
+            }
+
+            if (totalCost > gameState.cash) {
+                showAlert('Insufficient funds! You need $' + totalCost.toFixed(2), 'error');
+                return;
+            }
+
+            if (!gameState.holdings[symbol]) {
+                gameState.holdings[symbol] = { shares: 0, avgCost: 0 };
+            }
+
+            const holding = gameState.holdings[symbol];
+            const totalValue = (holding.shares * holding.avgCost) + totalCost;
+            const newShares = holding.shares + quantity;
+            holding.avgCost = totalValue / newShares;
+            holding.shares = newShares;
+
+            gameState.cash -= totalCost;
+
+            // Update price based on demand (someone bought = price goes up slightly)
+            stock.price = stock.price * (1 + (quantity * 0.001)); // Each share bought increases price by 0.1%
+            stock.change = ((stock.price - stock.basePrice) / stock.basePrice) * 100;
+            
+            // Track price history
+            if (!gameState.priceHistory[symbol]) {
+                gameState.priceHistory[symbol] = [stock.basePrice];
+            }
+            gameState.priceHistory[symbol].push(stock.price);
+
+            saveGameState();
+            closeBuyModal();
+            showAlert(`Bought ${quantity} shares of ${symbol} for $${totalCost.toFixed(2)}`, 'success');
+            updateUI();
+        }
+
+        function openSellModal(symbol) {
+            const stock = gameState.stocks[symbol];
+            const holding = gameState.holdings[symbol];
+            const modal = document.getElementById('sellModal');
+            const body = document.getElementById('sellModalBody');
+
+            body.innerHTML = `
+                <div class="form-group">
+                    <label><strong>${symbol}</strong> - ${stock.name}</label>
+                    <label>Current Price: $${stock.price.toFixed(2)}</label>
+                </div>
+                <div class="form-group">
+                    <label for="sellQuantity">Quantity (Max: ${holding.shares}):</label>
+                    <input type="number" id="sellQuantity" min="1" value="1" max="${holding.shares}">
+                </div>
+                <div class="form-group">
+                    <label>Total Proceeds: $<span id="totalProceedsDisplay">0.00</span></label>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-danger" onclick="sellStock('${symbol}')">Sell Now</button>
+                    <button class="btn-primary" onclick="closeSellModal()">Cancel</button>
+                </div>
+            `;
+
+            document.getElementById('sellQuantity').addEventListener('input', () => {
+                const quantity = parseInt(document.getElementById('sellQuantity').value);
+                document.getElementById('totalProceedsDisplay').textContent = (quantity * stock.price).toFixed(2);
+            });
+
+            document.getElementById('totalProceedsDisplay').textContent = stock.price.toFixed(2);
+            modal.style.display = 'block';
+        }
+
+        function closeSellModal() {
+            document.getElementById('sellModal').style.display = 'none';
+        }
+
+        function sellStock(symbol) {
+            const stock = gameState.stocks[symbol];
+            const holding = gameState.holdings[symbol];
+            const quantity = parseInt(document.getElementById('sellQuantity').value);
+            const proceeds = quantity * stock.price;
+
+            if (quantity <= 0 || quantity > holding.shares) {
+                showAlert('Please enter a valid quantity', 'error');
+                return;
+            }
+
+            holding.shares -= quantity;
+            gameState.cash += proceeds;
+
+            if (holding.shares === 0) {
+                delete gameState.holdings[symbol];
+            }
+
+            // Update price based on supply (someone sold = price goes down slightly)
+            stock.price = stock.price * (1 - (quantity * 0.001)); // Each share sold decreases price by 0.1%
+            stock.change = ((stock.price - stock.basePrice) / stock.basePrice) * 100;
+            
+            // Track price history
+            if (!gameState.priceHistory[symbol]) {
+                gameState.priceHistory[symbol] = [stock.basePrice];
+            }
+            gameState.priceHistory[symbol].push(stock.price);
+
+            saveGameState();
+            closeSellModal();
+            showAlert(`Sold ${quantity} shares of ${symbol} for $${proceeds.toFixed(2)}`, 'success');
+            updateUI();
+        }
+
+        function openMarketModal() {
+            const modal = document.getElementById('marketModal');
+            const body = document.getElementById('marketModalBody');
+
+            let html = '<div style="max-height: 500px; overflow-y: auto;">';
+            Object.keys(gameState.stocks).forEach(symbol => {
+                const stock = gameState.stocks[symbol];
+                const changePercent = stock.change.toFixed(2);
+                const changeClass = stock.change >= 0 ? 'up' : 'down';
+                const changeSymbol = stock.change >= 0 ? '↑' : '↓';
+
+                html += `
+                    <div class="stock-item">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="stock-price ${changeClass}">$${stock.price.toFixed(2)}</div>
+                        <div class="price-change ${changeClass}">${changeSymbol} ${Math.abs(changePercent)}%</div>
+                        <button class="btn-success btn-small" onclick="openBuyModal('${symbol}')">Buy</button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            body.innerHTML = html;
+            modal.style.display = 'block';
+        }
+
+        function closeMarketModal() {
+            document.getElementById('marketModal').style.display = 'none';
+        }
+
+        let currentGraphSymbol = null;
+        let stockChartInstance = null;
+
+        function openGraphModal(symbol) {
+            try {
+                currentGraphSymbol = symbol;
+                const stock = gameState.stocks[symbol];
+                const modal = document.getElementById('graphModal');
+
+                if (!stock) {
+                    console.warn('openGraphModal: stock not found', symbol);
+                    return;
+                }
+
+                document.getElementById('graphTitle').textContent = `${symbol} - ${stock.name}`;
+                const buyBtn = document.getElementById('buyFromGraphBtn');
+                if (buyBtn) buyBtn.onclick = function() {
+                    closeGraphModal();
+                    openBuyModal(symbol);
+                };
+
+                // Make sure chart container has a canvas and proper size
+                const canvas = document.getElementById('stockChart');
+                if (canvas) {
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                }
+
+                modal.style.display = 'block';
+
+                // Draw chart after modal is visible
+                setTimeout(() => {
+                    drawStockChart(symbol);
+                }, 120);
+            } catch (err) {
+                console.error('openGraphModal error', err);
+                const container = document.getElementById('chartContainer');
+                if (container) container.innerHTML = '<p style="color:#e74c3c">Unable to open chart.</p>';
+            }
+        }
+
+        function closeGraphModal() {
+            const modal = document.getElementById('graphModal');
+            if (modal) modal.style.display = 'none';
+            if (stockChartInstance) {
+                try { stockChartInstance.destroy(); } catch (e) { /* ignore */ }
+                stockChartInstance = null;
+            }
+        }
+
+        function drawStockChart(symbol) {
+            try {
+                const stock = gameState.stocks[symbol];
+                if (!stock) {
+                    console.warn('drawStockChart: missing stock', symbol);
+                    return;
+                }
+
+                // Ensure price history exists
+                if (!gameState.priceHistory[symbol] || gameState.priceHistory[symbol].length === 0) {
+                    gameState.priceHistory[symbol] = [stock.basePrice];
+                }
+                const priceHistory = gameState.priceHistory[symbol];
+
+                // Create simple numeric labels (time index)
+                const labels = priceHistory.map((_, i) => i.toString());
+
+                const canvas = document.getElementById('stockChart');
+                if (!canvas) {
+                    console.error('drawStockChart: canvas #stockChart not found');
+                    const container = document.getElementById('chartContainer');
+                    if (container) container.innerHTML = '<p style="color:#e74c3c">Chart canvas not available.</p>';
+                    return;
+                }
+
+                const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+                if (!ctx) {
+                    console.error('drawStockChart: unable to get canvas context');
+                    document.getElementById('chartContainer').innerHTML = '<p style="color:#e74c3c">Unable to draw chart on this device.</p>';
+                    return;
+                }
+
+                if (stockChartInstance) {
+                    try { stockChartInstance.destroy(); } catch (e) { /* ignore */ }
+                    stockChartInstance = null;
+                }
+
+                // Guard Chart existence
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js not loaded');
+                    document.getElementById('chartContainer').innerHTML = '<p style="color:#e74c3c">Chart library failed to load.</p>';
+                    return;
+                }
+
+                stockChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `${symbol} Price History`,
+                            data: priceHistory,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.12)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true, position: 'top' }
+                        },
+                        scales: {
+                            y: { beginAtZero: false, title: { display: true, text: 'Price ($)' } },
+                            x: { title: { display: true, text: 'Time (index)' } }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error('drawStockChart error', err);
+                const container = document.getElementById('chartContainer');
+                if (container) container.innerHTML = '<p style="color:#e74c3c">Failed to draw chart.</p>';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = 'alert ' + type + ' show';
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
+        }
+
+        function resetPortfolio() {
+            if (confirm('Are you sure you want to reset your portfolio? This will clear all holdings and cash.')) {
+                gameState.cash = 10000;
+                gameState.holdings = {};
+                saveGameState();
+                updateUI();
+                showAlert('Portfolio reset to $10,000', 'success');
+            }
+        }
+
+        function saveGameState() {
+            localStorage.setItem('stockSimulatorState', JSON.stringify(gameState));
+        }
+
+        window.onclick = function(event) {
+            const buyModal = document.getElementById('buyModal');
+            const sellModal = document.getElementById('sellModal');
+            const marketModal = document.getElementById('marketModal');
+
+            if (buyModal && event.target === buyModal) buyModal.style.display = 'none';
+            if (sellModal && event.target === sellModal) sellModal.style.display = 'none';
+            if (marketModal && event.target === marketModal) marketModal.style.display = 'none';
+        }
+
+        window.onload = initializeGame;
+    </script>
+</body>
+</html>
